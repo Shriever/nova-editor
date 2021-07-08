@@ -13,8 +13,9 @@ import { Hole } from "../editor/hole";
 import { Validator } from "../editor/validator";
 import { ActionExecutor } from "../editor/action-executor";
 import { TypeSystem } from "./type-sys";
+import { Serializable } from "./serializer";
 
-export class Callback {
+export class Callback implements Serializable {
     static counter: number;
     callback: () => any;
     callerId: string;
@@ -23,6 +24,10 @@ export class Callback {
         this.callback = callback;
         this.callerId = "caller-id-" + Callback.counter;
         Callback.counter++;
+    }
+
+    serialize(): string {
+        return JSON.stringify({ callerId: this.callerId });
     }
 }
 
@@ -108,6 +113,8 @@ export enum CallbackType {
 }
 
 export interface CodeConstruct {
+    serialize(): string;
+
     /**
      * Indicates whether this code-construct implements the TextEditable interface or not.
      */
@@ -219,7 +226,7 @@ export interface CodeConstruct {
 /**
  * A complete code statement such as: variable assignment, function call, conditional, loop, function definition, and other statements.
  */
-export abstract class Statement implements CodeConstruct {
+export abstract class Statement implements CodeConstruct, Serializable {
     isTextEditable = false;
     addableType: AddableType;
     receives = new Array<AddableType>();
@@ -239,6 +246,27 @@ export abstract class Statement implements CodeConstruct {
 
     constructor() {
         for (const type in CallbackType) this.callbacks[type] = new Array<Callback>();
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            isTextEditable: this.isTextEditable,
+            addableType: this.addableType,
+            receives: this.receives,
+            lineNumber: this.lineNumber,
+            left: this.left,
+            right: this.right,
+            // rootNode: this.rootNode.serialize(),
+            indexInRoot: this.indexInRoot,
+            body: this.body.map((it) => it.serialize()),
+            // scope: this.scope.serialize(),
+            tokens: this.tokens.map((it) => it.serialize()),
+            hasEmptyToken: this.hasEmptyToken,
+            keywordIndex: this.keywordIndex,
+            // callbacks: this.callbacks;
+            // notification: this.notification,
+            // hole: this.hole,
+        });
     }
 
     /**
@@ -619,7 +647,7 @@ export abstract class Statement implements CodeConstruct {
 /**
  * A statement that returns a value such as: binary operators, unary operators, function calls that return a value, literal values, and variables.
  */
-export abstract class Expression extends Statement implements CodeConstruct {
+export abstract class Expression extends Statement implements CodeConstruct, Serializable {
     isTextEditable = false;
     addableType: AddableType;
     // TODO: can change this to an Array to enable type checking when returning multiple items
@@ -629,6 +657,16 @@ export abstract class Expression extends Statement implements CodeConstruct {
         super();
 
         this.returns = returns;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            isTextEditable: this.isTextEditable,
+            returns: this.returns,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     isStatement(): boolean {
@@ -657,7 +695,7 @@ export abstract class Expression extends Statement implements CodeConstruct {
 /**
  * The smallest code construct: identifiers, holes (for either identifiers or expressions), operators and characters, and etc.
  */
-export abstract class Token implements CodeConstruct {
+export abstract class Token implements CodeConstruct, Serializable {
     isTextEditable = false;
     addableType: AddableType;
     rootNode: CodeConstruct = null;
@@ -675,6 +713,22 @@ export abstract class Token implements CodeConstruct {
 
         this.rootNode = root;
         this.text = text;
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            isTextEditable: this.isTextEditable,
+            addableType: this.addableType,
+            // rootNode: this.rootNode.serialize(),
+            indexInRoot: this.indexInRoot,
+            receives: this.receives,
+            left: this.left,
+            right: this.right,
+            text: this.text,
+            isEmpty: this.isEmpty,
+            // callbacks: this.callbacks,
+            // notification: this.notification
+        });
     }
 
     subscribe(type: CallbackType, callback: Callback) {
@@ -827,6 +881,15 @@ export class WhileStatement extends Statement {
     replaceCondition(expr: Expression) {
         this.replace(expr, this.conditionIndex);
     }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            conditionIndex: this.conditionIndex,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
 }
 
 export class IfStatement extends Statement {
@@ -845,6 +908,15 @@ export class IfStatement extends Statement {
         this.scope = new Scope();
 
         this.hasEmptyToken = true;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            conditionIndex: this.conditionIndex,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     replaceCondition(expr: Expression) {
@@ -935,6 +1007,16 @@ export class ElseStatement extends Statement {
         if (this.hasCondition) this.hasEmptyToken = true;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            conditionIndex: this.conditionIndex,
+            hasCondition: this.hasCondition,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     replaceCondition(expr: Expression) {
         if (this.hasCondition) this.replace(expr, this.conditionIndex);
     }
@@ -977,6 +1059,19 @@ export class ForStatement extends Statement {
         this.hasEmptyToken = true;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            buttonId: this.buttonId,
+            counterIndex: this.counterIndex,
+            rangeIndex: this.rangeIndex,
+            loopVar: this.loopVar.serialize(),
+            dataType: this.dataType,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     rebuild(pos: monaco.Position, fromIndex: number) {
         super.rebuild(pos, fromIndex);
         this.updateButton();
@@ -1003,7 +1098,7 @@ export class ForStatement extends Statement {
     }
 }
 
-export class Argument {
+export class Argument implements Serializable {
     type: DataType[];
     name: string;
     isOptional: boolean;
@@ -1012,6 +1107,14 @@ export class Argument {
         this.type = type;
         this.name = name;
         this.isOptional = isOptional;
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            type: this.type,
+            name: this.name,
+            isOptional: this.isOptional,
+        });
     }
 }
 
@@ -1030,6 +1133,15 @@ export class EmptyLineStmt extends Statement {
 
         this.rootNode = root;
         this.indexInRoot = indexInRoot;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            hasEmptyToken: this.hasEmptyToken,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     build(pos: monaco.Position): monaco.Position {
@@ -1078,6 +1190,18 @@ export class VarAssignmentStmt extends Statement {
         this.hasEmptyToken = true;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            buttonId: this.buttonId,
+            identifierIndex: this.identifierIndex,
+            valueIndex: this.valueIndex,
+            dataType: this.dataType,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     replaceIdentifier(code: CodeConstruct) {
         this.replace(code, this.identifierIndex);
     }
@@ -1124,6 +1248,17 @@ export class VariableReferenceExpr extends Expression {
         this.rootNode = root;
         this.indexInRoot = indexInRoot;
     }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            isEmpty: this.isEmpty,
+            identifier: this.identifier,
+            uniqueId: this.uniqueId,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
 }
 
 export class FunctionCallStmt extends Expression {
@@ -1168,6 +1303,16 @@ export class FunctionCallStmt extends Expression {
 
             this.hasEmptyToken = true;
         } else this.tokens.push(new NonEditableTkn(functionName + "()", this, this.tokens.length));
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            argumentsIndices: this.argumentsIndices,
+            functionName: this.functionName,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     replaceArgument(index: number, to: CodeConstruct) {
@@ -1223,6 +1368,17 @@ export class MethodCallExpr extends Expression {
 
             this.tokens.push(new NonEditableTkn(")", this, this.tokens.length));
         } else this.tokens.push(new NonEditableTkn("." + functionName + "()", this, this.tokens.length));
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            argumentsIndices: this.argumentsIndices,
+            expressionIndex: this.expressionIndex,
+            calledOn: this.calledOn,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     setExpression(prevItem: Expression) {
@@ -1286,6 +1442,15 @@ export class MethodCallStmt extends Statement {
         } else this.tokens.push(new NonEditableTkn("." + functionName + "()", this, this.tokens.length));
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            argumentsIndices: this.argumentsIndices,
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     replaceArgument(index: number, to: CodeConstruct) {
         this.replace(to, this.argumentsIndices[index]);
     }
@@ -1317,6 +1482,16 @@ export class MemberCallStmt extends Expression {
         this.tokens.push(new NonEditableTkn("]", this, this.tokens.length));
 
         this.hasEmptyToken = true;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator,
+            rightOperandIndex: this.rightOperandIndex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 }
 
@@ -1358,6 +1533,17 @@ export class BinaryOperatorExpr extends Expression {
         this.tokens.push(new NonEditableTkn(")", this, this.tokens.length));
 
         this.hasEmptyToken = true;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator,
+            leftOperandIndex: this.leftOperandIndex,
+            rightOperandIndex: this.rightOperandIndex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     replaceLeftOperand(code: CodeConstruct) {
@@ -1437,6 +1623,16 @@ export class UnaryOperatorExpr extends Expression {
         this.hasEmptyToken = true;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator,
+            operandIndex: this.operandIndex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     replaceOperand(code: CodeConstruct) {
         this.replace(code, this.operandIndex);
     }
@@ -1470,6 +1666,17 @@ export class BinaryBoolOperatorExpr extends Expression {
         this.tokens.push(new NonEditableTkn(")", this, this.tokens.length));
 
         this.hasEmptyToken = true;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator,
+            leftOperandIndex: this.leftOperandIndex,
+            rightOperandIndex: this.rightOperandIndex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     replaceLeftOperand(code: CodeConstruct) {
@@ -1507,6 +1714,17 @@ export class ComparatorExpr extends Expression {
         this.hasEmptyToken = true;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator,
+            leftOperandIndex: this.leftOperandIndex,
+            rightOperandIndex: this.rightOperandIndex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     replaceLeftOperand(code: CodeConstruct) {
         this.replace(code, this.leftOperandIndex);
     }
@@ -1535,6 +1753,15 @@ export class EditableTextTkn extends Token implements TextEditable {
         this.rootNode = root;
         this.indexInRoot = indexInRoot;
         this.validatorRegex = regex;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            validatorRegex: this.validatorRegex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     getSelection(): monaco.Selection {
@@ -1640,6 +1867,16 @@ export class LiteralValExpr extends Expression {
         this.indexInRoot = indexInRoot;
     }
 
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            allowedBinOps: this.allowedBinOps,
+            allowedBoolOps: this.allowedBoolOps
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
+
     getInitialFocus(): UpdatableContext {
         let newContext = new Context();
 
@@ -1685,6 +1922,15 @@ export class IdentifierTkn extends Token implements TextEditable {
         this.rootNode = root;
         this.indexInRoot = indexInRoot;
         this.validatorRegex = RegExp("^[^\\d\\W]\\w*$");
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            validatorRegex: this.validatorRegex
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     contains(pos: monaco.Position): boolean {
@@ -1734,6 +1980,15 @@ export class TypedEmptyExpr extends Token {
 
         this.receives.push(AddableType.Expression);
     }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            type: this.type
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
+    }
 }
 
 export class OperatorTkn extends Token {
@@ -1745,6 +2000,15 @@ export class OperatorTkn extends Token {
         this.rootNode = root;
         this.indexInRoot = indexInRoot;
         this.operator = text;
+    }
+
+    serialize(): string {
+        const superObj = JSON.parse(super.serialize());
+        const thisObj = {
+            operator: this.operator
+        };
+
+        return JSON.stringify(Object.assign(superObj, thisObj));
     }
 
     locate(pos: monaco.Position): CodeConstruct {
@@ -1793,7 +2057,7 @@ export class KeywordTkn extends Token {
 /**
  * The main body of the code which includes an array of statements.
  */
-export class Module {
+export class Module implements Serializable {
     body = new Array<Statement>();
     focus: Focus;
     validator: Validator;
@@ -1881,6 +2145,13 @@ export class Module {
 
         this.menuController = MenuController.getInstance();
         this.menuController.setInstance(this, this.editor);
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            body: this.body.map(it=> it.serialize()),
+            // scope: this.scope.serialize()
+        });
     }
 
     insertAfterIndex(focusedCode: CodeConstruct, index: number, items: Array<CodeConstruct>) {
@@ -2279,6 +2550,7 @@ export class Module {
     ///------------------VALIDATOR END
 
     insert(code: CodeConstruct, insertInto?: CodeConstruct) {
+        console.log(this.serialize())
         const context = this.focus.getContext();
         let focusedNode = insertInto ?? this.focus.onEmptyLine() ? context.lineStatement : context.token;
 
@@ -2804,7 +3076,7 @@ export class Module {
 /**
  * These scopes are created by multi-line statements
  */
-export class Scope {
+export class Scope implements Serializable {
     parentScope: Scope = null;
     references = new Array<Reference>();
 
@@ -2822,6 +3094,13 @@ export class Scope {
 
         return false;
     }
+    
+    serialize(): string {
+        return JSON.stringify({
+            parentScope: this.parentScope.serialize(),
+            references: this.references.map(it => it.serialize())
+        });
+    }
 
     getValidReferences(line: number): Array<Reference> {
         let validReferences = this.references.filter((ref) => ref.line() < line);
@@ -2834,7 +3113,7 @@ export class Scope {
     }
 }
 
-export class Reference {
+export class Reference implements Serializable {
     /**
      * Currently, either a variable or a function declaration. Could later be a class declaration.
      */
@@ -2848,6 +3127,13 @@ export class Reference {
     constructor(statement: Statement, scope: Scope) {
         this.statement = statement;
         this.scope = scope;
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            statement: this.statement.serialize(),
+            scope: this.scope.serialize()
+        });
     }
 
     line(): number {
