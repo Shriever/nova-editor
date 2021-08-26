@@ -152,34 +152,6 @@ export class Module {
         this.menuController.setInstance(this, this.editor);
 
         Util.getInstance(this);
-
-        //onclick handler for the run code button
-        const runCodeBtn = document.getElementById("runCode");
-        runCodeBtn.onclick = async () => {
-            const unformattedCode = this.editor.monaco.getValue();
-            const url = "/runCode";
-            const request = new Request(url, {
-                method: "POST",
-                headers: {
-                    Accept: "application/json, text/plain",
-                    "Content-Type": "application/json",
-                    "Cache-Control": "private",
-                },
-                body: JSON.stringify({ text: unformattedCode }),
-            });
-
-            const resultBody = await fetch(request)
-                .catch((err) => {
-                    console.error("Request error while trying to run user code!");
-                    console.error(err);
-                })
-                .then(async (res: Response) => {
-                    return await res.json();
-                });
-
-            document.getElementById("outputDiv").innerHTML =
-                resultBody.output.replace(/\n\r?/g, "<br />") ?? "Code produced no result...";
-        };
     }
 
     recursiveNotify(code: CodeConstruct, callbackType: CallbackType) {

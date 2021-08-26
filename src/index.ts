@@ -1,4 +1,5 @@
 import "./css/index.css";
+import { runUserCode } from "./routes/code-routes";
 import { Module } from "./syntax-tree/module";
 
 // @ts-ignore
@@ -21,3 +22,9 @@ self.MonacoEnvironment = {
 };
 
 export const nova = new Module("editor");
+
+//onclick handler for the run code button
+const runCodeBtn = document.getElementById("runCode");
+runCodeBtn.onclick = () => {
+    runUserCode(nova.editor.monaco.getValue());
+};
