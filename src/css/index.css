@@ -95,10 +95,6 @@ body {
     flex-flow: column;
 }
 
-#runCodeButton {
-    justify-self: start;
-}
-
 #runCodeButtonDiv {
     padding: 2px;
     margin-bottom: 5px;
@@ -111,4 +107,8 @@ body {
     padding: 2px;
     height: auto;
     flex: 1 1 auto;
+}
+
+#clearOutputBtn {
+    margin-left: 10px;
 }

@@ -24,7 +24,12 @@ self.MonacoEnvironment = {
 export const nova = new Module("editor");
 
 //onclick handler for the run code button
-const runCodeBtn = document.getElementById("runCode");
+const runCodeBtn = document.getElementById("runCodeBtn");
 runCodeBtn.onclick = () => {
     runUserCode(nova.editor.monaco.getValue());
+};
+
+const emptyConsoleBtn = document.getElementById("clearOutputBtn");
+emptyConsoleBtn.onclick = () => {
+    document.getElementById("outputDiv").innerHTML = "";
 };
