@@ -1,13 +1,44 @@
-const express = require("express");
-//const webpack = require("webpack");
-//const webpackDevMiddleware = require("webpack-dev-middleware");
-//const webpackHotMiddleware = require("webpack-hot-middleware");
-//const historyApiFallback = require("connect-history-api-fallback");
+const express = require('express');
+const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+const path = require("path")
+
+app.use(express.json())
+app.use(express.urlencoded({
+    extended: true
+}));
+app.use(express.static(path.resolve(__dirname, "dist")));
+
+
+app.get('/test', (req, res) => {
+    res.status(200).send("Request Received")
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
+
+server.listen(5000, () => {
+  console.log('listening on port 5000!');
+});
+
+
+
+
+
+
+
+/*const express = require("express");
 const path = require("path");
 
 let {PythonShell} = require('python-shell')
 const fs = require("fs")
-var cors = require('cors');
 
 const app = express();
 
@@ -17,28 +48,7 @@ app.use(express.urlencoded({
     extended: true
   }));
 
-//app.use(cors({origin: 'http://localhost:8080'}));
 
-
-
-/*const config = require("./webpack.config.js");
-const compiler = webpack(config);
-const instance = webpackDevMiddleware(compiler, {
-    publicPath: config.output.publicPath,
-});*/
-
-//.env file load
-//require("dotenv").config();
-
-// Tell express to use the webpack-dev-middleware and use the webpack.config.js
-// configuration file as a base.
-//NOTE: Need two use calls to instance, otherwise routes won't work
-//app.use(instance);
-//app.use(historyApiFallback());
-//app.use(instance);
-
-//enable hot middleware
-//app.use(webpackHotMiddleware(compiler));
 app.use(express.static(path.resolve(__dirname, "dist")));
 
 app.post("/runCode", (req ,res) => {
@@ -63,4 +73,4 @@ const port = process.env.PORT || 5000;
 
 app.listen(port, function () {
     console.log("Nova-Editor (React) listening on port " + port + "!\n");
-});
+});*/

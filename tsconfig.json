@@ -7,7 +7,7 @@
 		"target": "ES6",
 		"outDir": "./dist",
 		"lib": ["dom", "ES6"],
-		"types": [],
+		"types": ["node"],
 		"baseUrl": "./node_modules",
 		"jsx": "preserve",
 		"typeRoots": ["node_modules/@types"],

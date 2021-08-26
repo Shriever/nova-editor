@@ -10,6 +10,7 @@ module.exports = {
         "css.worker": "monaco-editor/esm/vs/language/css/css.worker",
         "html.worker": "monaco-editor/esm/vs/language/html/html.worker",
         "ts.worker": "monaco-editor/esm/vs/language/typescript/ts.worker",
+        "socket-connection.js": "./src/socket-connection.js"
     },
     resolve: {
         extensions: [".ts", ".js"],
@@ -34,6 +35,16 @@ module.exports = {
                 test: /\.ttf$/,
                 use: ["file-loader"],
             },
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: "babel-loader",
+                    options: {
+                      presets: ['@babel/preset-env']
+                    }
+                  }
+            }
         ],
     },
     plugins: [
