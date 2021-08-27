@@ -29,6 +29,23 @@ app.get('/test', (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //---------SOCKET EVENTS---------
 io.on('connection', (socket) => {
     console.log('a user connected');
