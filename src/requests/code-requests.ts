@@ -19,6 +19,6 @@ export const runUserCode = async (code: string) => {
             return await res.json();
         });
 
-    document.getElementById("outputDiv").innerHTML =
-        resultBody.output.replace(/\n\r?/g, "<br />") ?? "Code produced no result...";
+    /*document.getElementById("outputDiv").innerHTML =
+        resultBody.output.replace(/\n\r?/g, "<br />") ?? "Code produced no result...";*/
 };

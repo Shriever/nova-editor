@@ -1,7 +1,6 @@
 
 import { io } from "socket.io-client";
 
-
 const socket = io(`${process.env.SERVER_DOMAIN}:${process.env.SERVER_PORT}`, {transports: ['websocket'], upgrade: false});
 
 socket.on("connect_failed", (err) => {

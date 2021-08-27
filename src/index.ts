@@ -1,5 +1,5 @@
 import "./css/index.css";
-import { runUserCode } from "./routes/code-routes";
+import { runUserCode } from "./requests/code-requests";
 import { Module } from "./syntax-tree/module";
 
 // @ts-ignore

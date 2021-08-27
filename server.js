@@ -7,6 +7,11 @@ const io = new Server(server);
 const path = require("path")
 const webpack = require('webpack');
 const config = require('./webpack.config.js');
+const {PythonShell} = require('python-shell')
+const fs = require("fs")
+const {parseUserCode} = require("./src/python-execution/python-execution")
+const crypto = require("crypto");
+const userInputIndicator = crypto.randomBytes(20).toString('hex');
 
 require('dotenv').config()
 
@@ -28,9 +33,48 @@ app.get('/test', (req, res) => {
     res.status(200).send("Request Received")
 });
 
+app.post('/parse', (req, res) => {
+    res.status(200).send(parseUserCode(req.body.code, userInputIndicator))
+})
 
 
+/*
+app.post("/runCode", (req ,res) => {
+    const code = req.body.code;
+    
+    
+    fs.writeFile("script.py", 'a = input("Please enter something")', () => {
+try{
+    const pyShell = new PythonShell("script.py");
 
+        
+
+
+    let output = "";
+
+    pyShell.on('message')
+    
+    pyShell.on('message', (message => {
+        const inputRegex = new RegExp('INPUT')
+        console.log("Received message from Python script! Message: " + message)
+        output += message + "\n";
+    })
+
+    
+    pyShell.end((err, code, signal) => {
+        if(err) res.status(500).send(err)
+        else{
+            res.status(200).json({exitCode: code, exitSignal: signal, output: output})
+        }
+    })
+}catch(err){
+    console.log("SERVER ERROR")
+    console.log(err)
+}
+        
+    })
+})
+*/
 
 
 
