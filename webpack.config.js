@@ -1,5 +1,6 @@
 const path = require("path");
 const HtmlWebPackPlugin = require("html-webpack-plugin");
+const webpack = require('webpack')
 
 module.exports = {
     mode: "development",
@@ -10,7 +11,7 @@ module.exports = {
         "css.worker": "monaco-editor/esm/vs/language/css/css.worker",
         "html.worker": "monaco-editor/esm/vs/language/html/html.worker",
         "ts.worker": "monaco-editor/esm/vs/language/typescript/ts.worker",
-        "socket-connection.js": "./src/socket-connection.js"
+        "socket-connection.js": "./src/js/socket-connection.js"
     },
     resolve: {
         extensions: [".ts", ".js"],
@@ -36,12 +37,13 @@ module.exports = {
                 use: ["file-loader"],
             },
             {
-                test: /\.js$/,
+                test: /\.m?js$/,
                 exclude: /node_modules/,
                 use: {
                     loader: "babel-loader",
                     options: {
-                      presets: ['@babel/preset-env']
+                      presets: ['@babel/preset-env'], //compatibility for older browsers
+                      plugins: ["@babel/plugin-transform-object-assign"], // ensure compatibility with IE 11. 
                     }
                   }
             }
@@ -53,11 +55,17 @@ module.exports = {
             template: "./src/index.html",
             filename: "./index.html",
         }),
+        new webpack.DefinePlugin({
+            'process.env.NODE_ENV': JSON.stringify('development'),
+            'process.env.DEBUG': JSON.stringify(false),
+            'process.env.SERVER_PORT': JSON.stringify(5000),
+            'process.env.SERVER_DOMAIN': JSON.stringify('http://localhost')
+        })
     ],
     devtool: "inline-source-map",
     devServer: {
         proxy: {
-            '/': 'http://localhost:5000',
+            '/': 'http://localhost:5000', /**!!!FOR LOCAL DEV ONLY!!! The production version must run from a whitelisted domain using CORS and without a proxy!!!*/
           },
     }
 };

@@ -5,6 +5,15 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const path = require("path")
+const webpack = require('webpack');
+const config = require('./webpack.config.js');
+
+require('dotenv').config()
+
+const middleware = require('webpack-dev-middleware'); 
+const compiler = webpack(config); 
+
+app.use(middleware(compiler, {publicPath: config.output.publicPath}));
 
 app.use(express.json())
 app.use(express.urlencoded({
@@ -13,19 +22,44 @@ app.use(express.urlencoded({
 app.use(express.static(path.resolve(__dirname, "dist")));
 
 
+//---------APP ROUTES---------
+
 app.get('/test', (req, res) => {
     res.status(200).send("Request Received")
 });
 
+
+//---------SOCKET EVENTS---------
 io.on('connection', (socket) => {
-  console.log('a user connected');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
+    console.log('a user connected');
+    
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
 });
 
-server.listen(5000, () => {
-  console.log('listening on port 5000!');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+server.listen(process.env.SERVER_PORT, () => {
+  console.log('listening on port ' + process.env.SERVER_PORT + "!");
 });
 
 
