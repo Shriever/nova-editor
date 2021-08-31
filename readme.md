@@ -2,10 +2,10 @@
 A new text-based environment that helps beginners transition into conventional text-based programming environments.
 
 Features:
-- avoids syntax errors
-- enables structured text-based editing
-- provides learning moments on invalid attempts
-- provides hints and visual descriptions
+- Avoids syntax errors
+- Enables structured text-based editing
+- Provides learning moments on invalid attempts
+- Provides hints and visual descriptions
 
 Authoring code with Nova:
 - Cursor-aware Toolbox
